@@ -132,7 +132,7 @@ Despite these issues, many initiatives aim to use sports as a platform for socia
             question_id=question.id,
             step_number=3,
             step_type="sentence_understanding",
-            prompt_text="请选择最接近你理解的选项：",
+            prompt_text="请选择最接近你对于定位到的答案句理解的选项：",
             allow_custom_input=True
         )
         db.add(step3)
