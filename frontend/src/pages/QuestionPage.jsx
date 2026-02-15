@@ -186,21 +186,6 @@ function QuestionPage() {
                   )}
             </div>
 
-            {/* 答题结果提示 */}
-            {answerResult && (
-              <div className={`mt-4 p-4 rounded-lg ${
-                answerResult.is_correct 
-                  ? 'bg-green-100 border border-green-300' 
-                  : 'bg-red-100 border border-red-300'
-              }`}>
-                <p className={`text-sm ${
-                  answerResult.is_correct ? 'text-green-800' : 'text-red-800'
-                }`}>
-                  {answerResult.message}
-                </p>
-              </div>
-            )}
-
           </div>
         </div>
 

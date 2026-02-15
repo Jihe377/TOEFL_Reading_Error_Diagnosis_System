@@ -58,7 +58,9 @@ function ReflectionPage() {
       })
       
       // 跳转到诊断结果页
-      navigate(`/diagnosis/${answerId}`)
+      navigate(`/diagnosis/${answerId}`, {
+        state: { diagnosisResult: result }
+      })
     } catch (err) {
       console.error('Failed to submit reflection:', err)
       alert('提交失败，请重试')
