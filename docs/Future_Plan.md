@@ -1,85 +1,104 @@
+1. 题目页面的格式修改：去除AI味，参考真实考试的页面（右上角的你的选择+你的答案删除）
+2. 复盘页面：文章和选项隐藏在右侧，可以点开，点开之后复盘流程整体向右移动。文章和选项回收之后再回到居中位置
+3. 诊断页：
+  - AI分析之前能否加上RAG的部分，比如说要如何识别定位词，如何定位答案句，现在AI分析出来的方法论五花八门的，每个步骤的基本思路应该是一致的。
+  - 现在AI分析的结果展示应该是md格式的，展示的时候要处理一下黑体字之类的格式。
+  - 改进建议之后还可以加上练习推荐
+4. 补充学生的个人页面（应该要加上登录功能？）对于复盘的内容进行整体的展示
+5. 查看完整复盘的时候应该是在检查自己过去的答案是什么，所以显示用户过去的选择，而不是重新复盘一次
+6. 增加题目和题型
+
+梳理前后端流通逻辑，搞懂代码在干什么
+
+** 问题 1：刷新页面后数据丢失 **
+原因： 数据通过 location.state 传递，刷新后丢失
+解决方案： 实现 GET /api/diagnosis/:answerId
+```
+实现步骤：
+python# routes.py
+@router.get("/diagnosis/{user_answer_id}", response_model=DiagnosisOut)
+def get_diagnosis(user_answer_id: int, db: Session = Depends(get_db)):
+    response = db.query(ReflectionResponse).filter(
+        ReflectionResponse.user_answer_id == user_answer_id
+    ).first()
+    
+    if not response:
+        raise HTTPException(status_code=404, detail="诊断结果不存在")
+    
+    return DiagnosisOut.model_validate(response)
+javascript// api.js
+export const getDiagnosis = (userAnswerId) => {
+  return api.get(`/diagnosis/${userAnswerId}`)
+}
+```
+
+问题 2："下一题"按钮跳转
+当前实现： 硬编码 currentQuestionId + 1
+改进方案：
+选项 A： 从后端返回 next_question_id
+```
+# DiagnosisOut schema
+class DiagnosisOut(BaseModel):
+    # ...
+    next_question_id: Optional[int] = None
+```
+
+选项 B： 前端记录当前 question_id
+```
+// 在 QuestionPage 跳转时记录
+localStorage.setItem('current_question_id', questionId)
+
+// DiagnosisPage 中读取
+const currentQuestionId = localStorage.getItem('current_question_id')
+navigate(`/question/${parseInt(currentQuestionId) + 1}`)
+```
+
 # 方案迭代路线图
 ## 4.1 阶段 1：MVP（0-1 个月）
 目标：验证核心价值，跑通基础流程
 实施内容：
-
 完成 5-10 道题的题库建设
 实现 Step 1-5 的前端交互
 实现规则引擎 + LLM 实时诊断
 上线基础错题记录功能
 
 成功指标：
-
 学生能完整走完复盘流程
 诊断结果对学生有实际帮助（通过用户访谈验证）
 系统稳定运行
 
-不做的事：
-
-错误画像统计页面
-预生成诊断模板
-个性化推荐练习
-
 
 ## 4.2 阶段 2：性能优化（1-3 个月）
-触发条件：
 
-用户量增长到 100+ DAU
-API 成本开始显著
-学生抱怨等待时间过长
+目的：减少LLM调用次数，提高响应速度
+实施内容：引入混合生成方案
+核心思路：结构化路径预生成模板 + 个性化内容实时生成
 
-实施内容：
-引入混合生成方案
-核心思路：
-
-结构化路径预生成模板 + 个性化内容实时生成
-
-具体做法：
-
-分析真实错误路径分布
-
-统计哪些 Step 1-4 组合最常见
-识别高频路径（占比 > 5%）
-
-
-为高频路径预生成诊断模板
-
-模板包含：
-
-主要问题描述
-解释框架（带占位符）
-改进建议
-
-
-每个路径生成 1 个版本
-预生成成本：约 $1-2（500 次 LLM 调用）
-
-
-实时生成仅用于两种情况：
-
-低频路径（占比 < 5%）
-学生有自由输入内容时
-
-
+具体做法：分析真实错误路径分布
+  - 统计哪些 Step 1-4 组合最常见
+  - 识别高频路径（占比 > 5%）
+  - 为高频路径预生成诊断模板
+    - 模板包含：
+    1. 主要问题描述
+    2. 解释框架（带占位符）
+    3. 改进建议
+  - 实时生成仅用于两种情况：
+    - 低频路径（占比 < 5%）
+    - 学生有自由输入内容时
 
 预期效果：
+  - 70-80% 的请求无需调用 LLM
+  - 响应时间从 3 秒降至 < 500ms
+  - API 成本降低 70%
+  - 诊断质量可控（预生成内容经人工审核）
 
-70-80% 的请求无需调用 LLM
-响应时间从 3 秒降至 < 500ms
-API 成本降低 70%
-诊断质量可控（预生成内容经人工审核）
+建立质量监控体系 -- 用户反馈机制：
+  诊断结果页底部：
+    "这个诊断对你有帮助吗？"
+    👍 有帮助   👎 没帮助
 
-
-建立质量监控体系
-用户反馈机制：
-诊断结果页底部：
-"这个诊断对你有帮助吗？"
-👍 有帮助   👎 没帮助
-
-如果 👎，可选填写：
-[简短反馈框]
+  如果 👎，可选填写：[简短反馈框]
 质量迭代流程：
-
 收集每个模板的反馈数据
 针对差评率 > 30% 的模板进行优化
 生成 2-3 个新版本
