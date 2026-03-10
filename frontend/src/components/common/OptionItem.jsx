@@ -1,75 +1,68 @@
-function OptionItem({ 
+function OptionItem({
   option,
   isSelected,
   isCorrect,
   isWrong,
   showResult,
   onClick,
-  disabled
+  disabled,
 }) {
-  let containerStyles = 'w-full p-4 text-left rounded-xl border-2 transition-all duration-300 flex items-start gap-4 group'
-  let labelStyles = 'w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-lg font-bold transition-colors'
-  
+  // Determine radio circle style
+  let circleStyles = 'w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors duration-200'
+  let rowStyles = 'flex items-start gap-3 py-3 px-3 rounded-lg cursor-pointer transition-colors duration-150'
   if (showResult) {
     if (isCorrect) {
-      containerStyles += ' border-green-500 bg-green-50 ring-2 ring-green-500'
-      labelStyles += ' bg-green-600 text-white'
+      circleStyles += ' border-green-600 bg-green-600'
+      rowStyles += ' bg-green-50'
     } else if (isWrong) {
-      containerStyles += ' border-red-500 bg-red-50 ring-2 ring-red-500'
-      labelStyles += ' bg-red-600 text-white'
+      circleStyles += ' border-red-500 bg-red-500'
+      rowStyles += ' bg-red-50'
     } else {
-      containerStyles += ' border-gray-200 bg-white opacity-60'
-      labelStyles += ' bg-gray-100 text-gray-400'
+      circleStyles += ' border-gray-300'
+      rowStyles += ' opacity-50'
     }
   } else {
     if (isSelected) {
-      containerStyles += ' border-blue-500 bg-blue-50 ring-2 ring-blue-500'
-      labelStyles += ' bg-blue-600 text-white'
+      circleStyles += ' border-toefl-accent bg-toefl-accent'
+      rowStyles += ' bg-toefl-light'
+      labelStyles = 'text-sm font-semibold w-5 flex-shrink-0 mt-0.5 text-toefl-accent'
     } else {
-      containerStyles += ' border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50 cursor-pointer'
-      labelStyles += ' bg-gray-100 text-gray-500 group-hover:bg-blue-100'
+      circleStyles += ' border-gray-400'
+      rowStyles += ' hover:bg-gray-50'
     }
+    if (disabled) rowStyles += ' cursor-not-allowed'
   }
 
-  if (disabled && !showResult) {
-    containerStyles += ' cursor-not-allowed opacity-50'
-  }
+  // Inner dot for selected/correct/wrong states
+  const showInnerDot = isSelected || (showResult && (isCorrect || isWrong))
+  const innerDotColor = showResult
+    ? isCorrect ? 'bg-white' : isWrong ? 'bg-white' : ''
+    : 'bg-white'
 
   return (
     <button
       onClick={!disabled && !showResult ? onClick : undefined}
       disabled={disabled || showResult}
-      className={containerStyles}
+      className={`w-full text-left ${rowStyles}`}
     >
-        <span className={labelStyles}>
-            {option.option_label}
-        </span>
-
-        <span className="flex-1 text-gray-800 mt-1 text-left">
-            {option.option_text}
-        </span>
-        
-        {/* 答题结果图标和标签 */}
-
-        {showResult && isCorrect && (
-            <span className="text-green-600 text-2xl font-bold animate-in zoom-in">✓</span>
+      {/* Radio circle */}
+      <span className={circleStyles}>
+        {showInnerDot && (
+          <span className={`w-2 h-2 rounded-full ${innerDotColor}`} />
         )}
-        {showResult && isWrong && (
-            <span className="text-red-600 text-2xl font-bold animate-in zoom-in">✗</span>
-        )}
+      </span>
 
-        {showResult && (
-        <div className="absolute top-2 right-2 text-xs font-medium">
-          {isCorrect && !isWrong && (
-            <span className="text-green-700">✓ 正确答案</span>
-          )}
-          {isCorrect && isWrong && (
-            <span className="text-green-700">✓ 正确答案</span>
-          )}
-          {isWrong && (
-            <span className="text-red-700">✗ 你的选择</span>
-          )}
-        </div>
+      {/* Option text */}
+      <span className="flex-1 text-gray-800 text-sm leading-relaxed">
+        {option.option_text}
+      </span>
+
+      {/* Result label */}
+      {showResult && isCorrect && (
+        <span className="text-xs text-green-700 font-medium ml-2 flex-shrink-0">正确答案</span>
+      )}
+      {showResult && isWrong && (
+        <span className="text-xs text-red-700 font-medium ml-2 flex-shrink-0">你的选择</span>
       )}
     </button>
   )
