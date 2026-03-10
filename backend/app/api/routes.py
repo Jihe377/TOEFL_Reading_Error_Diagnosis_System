@@ -154,6 +154,52 @@ def get_reflection_steps(user_answer_id: int, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/diagnosis/{user_answer_id}", response_model=DiagnosisOut)
+def get_diagnosis(user_answer_id: int, db: Session = Depends(get_db)):
+    """获取已保存的诊断结果（用于页面刷新）"""
+    response = db.query(ReflectionResponse).filter(
+        ReflectionResponse.user_answer_id == user_answer_id
+    ).first()
+    if not response:
+        raise HTTPException(status_code=404, detail="诊断结果不存在")
+
+    # Reconstruct step comparison text from stored choice IDs
+    def choice_text(choice_id):
+        if not choice_id:
+            return ""
+        c = db.query(ReflectionChoice).filter(ReflectionChoice.id == choice_id).first()
+        return c.choice_text if c else ""
+
+    def correct_choice_text(choice_id):
+        if not choice_id:
+            return ""
+        c = db.query(ReflectionChoice).filter(ReflectionChoice.id == choice_id).first()
+        if not c:
+            return ""
+        correct = db.query(ReflectionChoice).filter(
+            ReflectionChoice.reflection_step_id == c.reflection_step_id,
+            ReflectionChoice.is_correct == True
+        ).first()
+        return correct.choice_text if correct else ""
+
+    return DiagnosisOut(
+        user_answer_id=user_answer_id,
+        step1_is_correct=response.step1_is_correct or False,
+        step1_student_choice=choice_text(response.step1_choice_id),
+        step1_correct_answer=correct_choice_text(response.step1_choice_id),
+        step2_is_correct=response.step2_is_correct or False,
+        step2_student_choice=choice_text(response.step2_choice_id),
+        step2_correct_answer=correct_choice_text(response.step2_choice_id),
+        step3_quality=response.step3_quality or "unknown",
+        step3_student_understanding=choice_text(response.step3_choice_id),
+        step3_correct_understanding=correct_choice_text(response.step3_choice_id),
+        rule_error_level=response.rule_error_level or "",
+        rule_error_type=response.rule_error_type or "",
+        llm_explanation=response.llm_explanation or "",
+        llm_suggestion=response.llm_suggestion or "",
+    )
+
+
 # 提交复盘回答
 @router.post("/reflections", response_model=DiagnosisOut)
 def submit_reflection(reflection: ReflectionSubmit, db: Session = Depends(get_db)):
