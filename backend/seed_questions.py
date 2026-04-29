@@ -94,6 +94,85 @@ def add_question(db, passage_id, stem, answer_sentence, options_data,
 
 PASSAGES = [
     # -----------------------------------------------------------------------
+    # Passage 1 — The Impact of Sports on Social Integration
+    # -----------------------------------------------------------------------
+    {
+        "title": "The Impact of Sports on Social Integration",
+        "content": (
+            "Sports can promote social integration by bridging gaps between people of various "
+            "backgrounds. Participation in sports can lead to increased social cohesion and "
+            "improved relationships among diverse groups.\n\n"
+            "For example, community soccer leagues often bring together people from different "
+            "ethnicities, creating an environment where cultural differences are celebrated and "
+            "mutual respect is cultivated. However, the impact of sports on social integration "
+            "is not without challenges. Competitive environments can sometimes exacerbate social "
+            "tensions, particularly when favoritism or exclusionary practices are present.\n\n"
+            "Despite these issues, many initiatives aim to use sports as a platform for social "
+            "change. One such initiative is the sport for peace program, which focuses on conflict "
+            "resolution through team-building activities and collaborative sports events. The role "
+            "of sports in social integration extends beyond participation. Spectatorship and fandom "
+            "also play significant roles in uniting people. Major international sports events like "
+            "the olympics or the world cup serve as opportunities for nations to come together and "
+            "share common goals. The visibility of athletes from diverse backgrounds during these "
+            "events fosters a sense of global harmony. These events often highlight stories of "
+            "athletes overcoming adversity, inspiring spectators and fostering a collective sense "
+            "of achievement."
+        ),
+        "questions": [
+            {
+                "stem": "What does the passage suggest about the sport for peace program?",
+                "answer_sentence": (
+                    "One such initiative is the sport for peace program, which focuses on conflict "
+                    "resolution through team-building activities and collaborative sports events."
+                ),
+                "options": [
+                    ("A", "Its main goal is to eliminate favoritism in sports.", False),
+                    ("B", "It primarily targets professional athletes.", False),
+                    ("C", "It uses team-building exercises to address conflicts.", True),
+                    ("D", "It is only effective in local communities.", False),
+                ],
+                "step1_choices": [
+                    ("sport", False, 1),
+                    ("passage", False, 2),
+                    ("sport for peace program", True, 3),
+                    ("suggest", False, 4),
+                ],
+                "step2_choices": [
+                    ("Competitive environments can sometimes exacerbate social tensions, particularly when favoritism or exclusionary practices are present.", False, 1),
+                    ("One such initiative is the sport for peace program, which focuses on conflict resolution through team-building activities and collaborative sports events.", True, 2),
+                    ("The role of sports in social integration extends beyond participation.", False, 3),
+                    ("以上都不是", False, 4),
+                ],
+                "step3_choices": [
+                    ("这个项目旨在消除体育中的偏袒现象", False, 1),
+                    ("这个项目专注于团队建设活动", False, 2),
+                    ("这个项目通过团队建设活动来解决冲突", True, 3),
+                    ("以上都不对，我的理解是：", False, 4),
+                ],
+                "step4_choices": [
+                    ("我认为文章重点讨论了 favoritism 问题，所以 A 是答案", False, 1),
+                    ("我认为 sport for peace program 就是为了消除 favoritism", False, 2),
+                    ("我混淆了 sport for peace program 和文章提到的另一个内容", False, 3),
+                    ("以上都不对，我的理由是：", False, 4),
+                ],
+                "step5_choices": [
+                    ("这个项目的核心是团队建设", False, 1),
+                    ("这个项目通过团队建设活动来解决冲突", True, 2),
+                    ("这个项目只在特定社区有效", False, 3),
+                    ("我还不太理解为什么 C 是对的：", False, 4),
+                ],
+                "step6_choices": [
+                    ("定位句找错了", False, 1),
+                    ("答案句理解不对", False, 2),
+                    ("选项主干内容不明确", False, 3),
+                    ("选项细节信息理解错误", False, 4),
+                    ("其他：", False, 5),
+                ],
+            },
+        ],
+    },
+
+    # -----------------------------------------------------------------------
     # Passage 2 — Mycorrhizal Fungi in Forest Ecosystems
     # -----------------------------------------------------------------------
     {

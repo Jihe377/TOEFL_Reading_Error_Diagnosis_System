@@ -109,4 +109,21 @@ export const getDiagnosis = (userAnswerId) => {
   return api.get(`/diagnosis/${userAnswerId}`)
 }
 
+// ── Admin API ──────────────────────────────────────────────────────────────────
+
+export const getExamSets = () => api.get('/admin/exam-sets')
+export const createExamSet = (data) => api.post('/admin/exam-sets', data)
+export const getPassages = (examSetId) =>
+  api.get('/admin/passages', { params: examSetId != null ? { exam_set_id: examSetId } : {} })
+export const getPassageDetail = (passageId) => api.get(`/admin/passages/${passageId}`)
+export const createPassage = (data) => api.post('/admin/passages', data)
+export const getQuestions = (passageId, questionType) =>
+  api.get('/admin/questions', {
+    params: {
+      ...(passageId != null ? { passage_id: passageId } : {}),
+      ...(questionType != null ? { question_type: questionType } : {}),
+    },
+  })
+export const createQuestion = (data) => api.post('/admin/questions', data)
+
 export default api

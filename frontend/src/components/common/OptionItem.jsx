@@ -25,7 +25,6 @@ function OptionItem({
     if (isSelected) {
       circleStyles += ' border-toefl-accent bg-toefl-accent'
       rowStyles += ' bg-toefl-light'
-      labelStyles = 'text-sm font-semibold w-5 flex-shrink-0 mt-0.5 text-toefl-accent'
     } else {
       circleStyles += ' border-gray-400'
       rowStyles += ' hover:bg-gray-50'

@@ -2,13 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.models import (
-    Passage, Question, Option, ReflectionStep, 
+    ExamSet, Passage, Question, Option, ReflectionStep,
     ReflectionChoice, User, UserAnswer, ReflectionResponse
 )
 from app.api.schemas import (
     QuestionOut, OptionOut, AnswerSubmit, AnswerResult,
     ReflectionStepsOut, ReflectionStepOut, ReflectionChoiceOut,
-    ReflectionSubmit, DiagnosisOut
+    ReflectionSubmit, DiagnosisOut,
+    CreateExamSet, ExamSetOut, CreatePassage, PassageListItem,
+    CreateQuestion, CreateOptionIn, QuestionListItem,
+    PassageDetail, QuestionWithOptions, OptionListItem,
 )
 
 from app.services.rule_engine import ErrorDiagnoser
@@ -74,7 +77,10 @@ def submit_answer(answer: AnswerSubmit, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="选项不存在")
     
     is_correct = (answer.selected_option_id == correct_option.id)
-    needs_reflection = not is_correct
+    has_reflection_steps = db.query(ReflectionStep).filter(
+        ReflectionStep.question_id == answer.question_id
+    ).first() is not None
+    needs_reflection = not is_correct and has_reflection_steps
     
     # 保存答题记录
     user_answer = UserAnswer(
@@ -117,7 +123,8 @@ def get_reflection_steps(user_answer_id: int, db: Session = Depends(get_db)):
     
     # 获取题目信息
     question = db.query(Question).filter(Question.id == user_answer.question_id).first()
-    
+    passage = db.query(Passage).filter(Passage.id == question.passage_id).first()
+
     # 获取用户选择的选项和正确选项
     selected_option = db.query(Option).filter(Option.id == user_answer.selected_option_id).first()
     correct_option = db.query(Option).filter(
@@ -148,6 +155,7 @@ def get_reflection_steps(user_answer_id: int, db: Session = Depends(get_db)):
     return ReflectionStepsOut(
         question_id=question.id,
         question_stem=question.stem,
+        passage_content=passage.content if passage else "",
         user_selected_option=f"{selected_option.option_label}: {selected_option.option_text}",
         correct_option=f"{correct_option.option_label}: {correct_option.option_text}",
         steps=steps_out
@@ -182,6 +190,13 @@ def get_diagnosis(user_answer_id: int, db: Session = Depends(get_db)):
         ).first()
         return correct.choice_text if correct else ""
 
+    user_answer = db.query(UserAnswer).filter(UserAnswer.id == user_answer_id).first()
+    next_question = None
+    if user_answer:
+        next_question = db.query(Question).filter(
+            Question.id > user_answer.question_id
+        ).order_by(Question.id).first()
+
     return DiagnosisOut(
         user_answer_id=user_answer_id,
         step1_is_correct=response.step1_is_correct or False,
@@ -197,6 +212,7 @@ def get_diagnosis(user_answer_id: int, db: Session = Depends(get_db)):
         rule_error_type=response.rule_error_type or "",
         llm_explanation=response.llm_explanation or "",
         llm_suggestion=response.llm_suggestion or "",
+        next_question_id=next_question.id if next_question else None,
     )
 
 
@@ -346,32 +362,142 @@ def submit_reflection(reflection: ReflectionSubmit, db: Session = Depends(get_db
     db.add(response)
     db.commit()
 
-    correct_option = db.query(Option).filter(
-        Option.question_id == question.id,
-        Option.is_correct == True
-    ).first()
-    
+    next_question = db.query(Question).filter(
+        Question.id > question.id
+    ).order_by(Question.id).first()
+
     return DiagnosisOut(
         user_answer_id=reflection.user_answer_id,
-        
+
         # Step 1 对比
         step1_is_correct=step1_is_correct,
         step1_student_choice=step1_student_choice,
         step1_correct_answer=step1_correct_answer,
-        
+
         # Step 2 对比
         step2_is_correct=step2_is_correct,
         step2_student_choice=step2_student_choice,
         step2_correct_answer=step2_correct_answer,
-        
+
         # Step 3 对比
         step3_quality=step3_quality,
         step3_student_understanding=step3_student_understanding,
         step3_correct_understanding=step3_correct_understanding,
-        
+
         # 诊断结果
         rule_error_level=rule_error_level,
         rule_error_type=rule_error_type,
         llm_explanation=llm_explanation,
-        llm_suggestion=llm_suggestion
+        llm_suggestion=llm_suggestion,
+
+        next_question_id=next_question.id if next_question else None,
     )
+
+
+# ── Admin endpoints ────────────────────────────────────────────────────────────
+
+@router.get("/admin/exam-sets", response_model=list[ExamSetOut])
+def list_exam_sets(db: Session = Depends(get_db)):
+    return db.query(ExamSet).order_by(ExamSet.id).all()
+
+
+@router.post("/admin/exam-sets", response_model=ExamSetOut)
+def create_exam_set(payload: CreateExamSet, db: Session = Depends(get_db)):
+    exam_set = ExamSet(name=payload.name, description=payload.description)
+    db.add(exam_set)
+    db.commit()
+    db.refresh(exam_set)
+    return exam_set
+
+
+@router.get("/admin/passages", response_model=list[PassageListItem])
+def list_passages(exam_set_id: int | None = None, db: Session = Depends(get_db)):
+    query = db.query(Passage)
+    if exam_set_id is not None:
+        query = query.filter(Passage.exam_set_id == exam_set_id)
+    return query.order_by(Passage.id).all()
+
+
+@router.get("/admin/passages/{passage_id}", response_model=PassageDetail)
+def get_passage_detail(passage_id: int, db: Session = Depends(get_db)):
+    passage = db.query(Passage).filter(Passage.id == passage_id).first()
+    if not passage:
+        raise HTTPException(status_code=404, detail="Passage not found")
+
+    questions = db.query(Question).filter(Question.passage_id == passage_id).order_by(Question.id).all()
+    questions_out = []
+    for q in questions:
+        options = db.query(Option).filter(Option.question_id == q.id).order_by(Option.option_label).all()
+        questions_out.append(QuestionWithOptions(
+            id=q.id,
+            question_type=q.question_type,
+            stem=q.stem,
+            options=[OptionListItem.model_validate(o) for o in options],
+        ))
+
+    return PassageDetail(
+        id=passage.id,
+        title=passage.title,
+        content=passage.content,
+        passage_type=passage.passage_type,
+        exam_set_id=passage.exam_set_id,
+        questions=questions_out,
+    )
+
+
+@router.post("/admin/passages", response_model=PassageListItem)
+def create_passage(payload: CreatePassage, db: Session = Depends(get_db)):
+    if payload.exam_set_id is not None:
+        if not db.query(ExamSet).filter(ExamSet.id == payload.exam_set_id).first():
+            raise HTTPException(status_code=404, detail="Exam set not found")
+    passage = Passage(
+        title=payload.title,
+        content=payload.content,
+        passage_type=payload.passage_type,
+        exam_set_id=payload.exam_set_id,
+    )
+    db.add(passage)
+    db.commit()
+    db.refresh(passage)
+    return passage
+
+
+@router.post("/admin/questions", response_model=QuestionListItem)
+def create_question(payload: CreateQuestion, db: Session = Depends(get_db)):
+    if not db.query(Passage).filter(Passage.id == payload.passage_id).first():
+        raise HTTPException(status_code=404, detail="Passage not found")
+
+    correct_count = sum(1 for o in payload.options if o.is_correct)
+    if correct_count != 1:
+        raise HTTPException(status_code=400, detail="Exactly one option must be marked correct")
+
+    question = Question(
+        passage_id=payload.passage_id,
+        question_type=payload.question_type,
+        stem=payload.stem,
+        answer_sentence=payload.answer_sentence,
+    )
+    db.add(question)
+    db.flush()  # get question.id before adding options
+
+    for opt in payload.options:
+        db.add(Option(
+            question_id=question.id,
+            option_label=opt.option_label,
+            option_text=opt.option_text,
+            is_correct=opt.is_correct,
+        ))
+
+    db.commit()
+    db.refresh(question)
+    return question
+
+
+@router.get("/admin/questions", response_model=list[QuestionListItem])
+def list_questions(passage_id: int | None = None, question_type: str | None = None, db: Session = Depends(get_db)):
+    query = db.query(Question)
+    if passage_id is not None:
+        query = query.filter(Question.passage_id == passage_id)
+    if question_type is not None:
+        query = query.filter(Question.question_type == question_type)
+    return query.order_by(Question.id).all()

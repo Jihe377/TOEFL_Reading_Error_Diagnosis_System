@@ -3,6 +3,16 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
 
+class ExamSet(Base):
+    __tablename__ = "exam_sets"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+    passages = relationship("Passage", back_populates="exam_set")
+
 class Passage(Base):
     '''
     Docstring for Passage
@@ -12,8 +22,11 @@ class Passage(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(200), nullable=False)
     content = Column(Text, nullable=False)
+    passage_type = Column(String(50), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
-    
+    exam_set_id = Column(Integer, ForeignKey("exam_sets.id"), nullable=True)
+
+    exam_set = relationship("ExamSet", back_populates="passages")
     questions = relationship("Question", back_populates="passage")
 
 class Question(Base):

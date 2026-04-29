@@ -1,20 +1,30 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import HomePage from './pages/HomePage'
 import QuestionPage from './pages/QuestionPage'
 import ReflectionPage from './pages/ReflectionPage'
 import DiagnosisPage from './pages/DiagnosisPage'
+import AdminPage from './pages/AdminPage'
+import PracticePage from './pages/PracticePage'
+import JijingPage from './pages/JijingPage'
 
 function App() {
   return (
     <Router>
       <div className="min-h-screen bg-white">
         <Routes>
-          <Route path="/" element={<Navigate to="/question/1" replace />} />
-          
+          <Route path="/" element={<HomePage />} />
+
+          <Route path="/practice" element={<PracticePage />} />
+
+          <Route path="/jijing" element={<JijingPage />} />
+
           <Route path="/question/:id" element={<QuestionPage />} />
-          
+
           <Route path="/reflection/:answerId" element={<ReflectionPage />} />
-          
+
           <Route path="/diagnosis/:answerId" element={<DiagnosisPage />} />
+
+          <Route path="/admin" element={<AdminPage />} />
           
           <Route path="*" element={
             <div className="flex items-center justify-center min-h-screen">

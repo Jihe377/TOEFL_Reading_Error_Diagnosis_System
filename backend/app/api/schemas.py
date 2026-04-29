@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional 
+from typing import Optional
 from datetime import datetime
 
 class OptionOut(BaseModel):
@@ -60,6 +60,7 @@ class ReflectionStepsOut(BaseModel):
     """Reflection steps for a question"""
     question_id: int
     question_stem: str
+    passage_content: str
     user_selected_option: str
     correct_option: str
     steps: list[ReflectionStepOut]
@@ -84,25 +85,112 @@ class ReflectionSubmit(BaseModel):
 class DiagnosisOut(BaseModel):
     """Diagnosis result for a user answer"""
     user_answer_id: int
-    
+
     step1_is_correct: bool
-    step1_student_choice: str          
-    step1_correct_answer: str 
+    step1_student_choice: str
+    step1_correct_answer: str
 
     step2_is_correct: bool
-    step2_student_choice: str          
+    step2_student_choice: str
     step2_correct_answer: str
 
-    step3_quality: str                 
-    step3_student_understanding: str   
-    step3_correct_understanding: str  
-    
+    step3_quality: str
+    step3_student_understanding: str
+    step3_correct_understanding: str
+
     rule_error_level: str
     rule_error_type: str
-    
+
     llm_explanation: str
     llm_suggestion: str
 
+    next_question_id: Optional[int] = None
+
+
+    class Config:
+        from_attributes = True
+
+# ── Admin schemas ──────────────────────────────────────────────────────────────
+
+class CreateExamSet(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+class ExamSetOut(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class CreatePassage(BaseModel):
+    title: str
+    content: str
+    passage_type: Optional[str] = None
+    exam_set_id: Optional[int] = None
+
+class PassageListItem(BaseModel):
+    id: int
+    title: str
+    passage_type: Optional[str] = None
+    exam_set_id: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+class CreateOptionIn(BaseModel):
+    option_label: str   # "A", "B", "C", "D"
+    option_text: str
+    is_correct: bool
+
+class CreateQuestion(BaseModel):
+    passage_id: int
+    question_type: str
+    stem: str
+    answer_sentence: Optional[str] = None
+    options: list[CreateOptionIn]
+
+class QuestionListItem(BaseModel):
+    id: int
+    passage_id: int
+    question_type: str
+    stem: str
+
+    class Config:
+        from_attributes = True
+
+
+class OptionListItem(BaseModel):
+    id: int
+    option_label: str
+    option_text: str
+    is_correct: bool
+
+    class Config:
+        from_attributes = True
+
+
+class QuestionWithOptions(BaseModel):
+    id: int
+    question_type: str
+    stem: str
+    options: list[OptionListItem]
+
+    class Config:
+        from_attributes = True
+
+
+class PassageDetail(BaseModel):
+    id: int
+    title: str
+    content: str
+    passage_type: Optional[str] = None
+    exam_set_id: Optional[int] = None
+    questions: list[QuestionWithOptions]
+
+    class Config:
+        from_attributes = True
 
     class Config:
         from_attributes = True
