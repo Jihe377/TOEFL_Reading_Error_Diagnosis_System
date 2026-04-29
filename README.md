@@ -76,7 +76,7 @@ This system bridges that gap.
 - Cost-effective LLM integration (~$0.02 per diagnosis)
 
 ### Error Tracking & Analytics
-- Persistent error history stored in SQLite database
+- Persistent error history stored in PostgreSQL database
 - Error categorization by cognitive level (L1: Keywords, L2: Location, L3: Comprehension, L4: Options)
 - Foundation for future adaptive learning features
 
@@ -110,7 +110,7 @@ This system bridges that gap.
 └─────────────────────────────┬───────────────────────────────────┘
                               │ SQLAlchemy ORM
 ┌─────────────────────────────▼───────────────────────────────────┐
-│                       Data Layer (SQLite)                        │
+│                    Data Layer (PostgreSQL)                        │
 │  8 Tables: passages, questions, options, reflection_steps,      │
 │            reflection_choices, users, user_answers,              │
 │            reflection_responses                                  │
@@ -132,7 +132,7 @@ For detailed architecture diagram, see [System_architecture_diagram.md](./docs/S
 - **Framework**: FastAPI 0.100+
 - **Language**: Python 3.11+
 - **ORM**: SQLAlchemy
-- **Database**: SQLite (development), PostgreSQL-ready (production)
+- **Database**: PostgreSQL
 - **AI Integration**: Google Gemini 1.5 Flash
 - **Validation**: Pydantic schemas
 
@@ -383,16 +383,27 @@ Result: 70% cost reduction, 5x faster
 - [ ] Enhanced error analytics dashboard
 - [ ] Export error reports (PDF)
 
-### Phase 3 (Planned)
-- [ ] Adaptive practice generation based on error patterns
-- [ ] Teacher dashboard for classroom use
-- [ ] Multi-language support (Chinese explanations)
-- [ ] Mobile app (React Native)
+### Phase 3 (Teacher Agent Content Production System)
 
-### Research Extensions
-- [ ] Fine-tuned error classification model
-- [ ] Student error trajectory modeling
-- [ ] Automated practice generation using RAG
+Multi-agent pipeline that lets teachers upload PDF/Word question sets and automatically produces a structured knowledge card library — replacing the current manual seed workflow.
+
+**Agent Pipeline (LangGraph-orchestrated)**
+- [ ] Parser Agent: PDF/Word → structured JSON (rule-based, no LLM)
+- [ ] Classifier Agent: 9 TOEFL question types via pgvector + Claude API
+- [ ] QA Validator: 3-tier confidence routing to reduce teacher review noise
+- [ ] Analyst Agent: question-type-aware knowledge points + error pattern inference
+- [ ] Card Generator: Markdown card rendering (no LLM, template-based)
+
+**Infrastructure**
+- [ ] Teacher-controlled solving strategy versioning (`v1 → v2`) per question type
+- [ ] Card library browser with strategy-version filtering and bulk regeneration
+- [ ] SSE progress streaming for batch processing jobs
+- [ ] `cards.reflection_template_id` reserved interface (nullable) for Phase 4 bridge
+
+### Phase 4 (Reflection Template Generator)
+- [ ] Auto-convert card library → `reflection_steps` + `reflection_choices` (6-step format)
+- [ ] Trigger condition: card library reaches 50–100 cards covering all 9 question types
+- [ ] Closes the loop between teacher content production and student reflection workflow
 
 ---
 
@@ -611,7 +622,7 @@ This project demonstrates:
 - Google Gemini 1.5 flash
 
 ### 8.4 数据库
-- SQLite（本地开发）→ PostgreSQL（生产）
+- PostgreSQL
 
 
 #### 阶段 1（MVP）
