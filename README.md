@@ -1,5 +1,5 @@
-# **TOEFL Reading Error Diagnosis System**  
-（托福阅读错因诊断与复盘辅助系统）
+# **TOEFL LeapRead System**  
+AI-Powered TOEFL Reading Diagnosis & Teaching Content Platform
 
 # TOEFL Reading Error Diagnosis System
 
